@@ -1,0 +1,54 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Chat</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script defer src="client.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>💬 Chào mừng đến với Web Chat</h1>
+      </header>
+
+      <section id="mode-selection" class="card">
+        <button onclick="showLogin()">Đăng nhập</button>
+        <button onclick="enterAnonymous()">Chat ẩn danh</button>
+      </section>
+
+      <form id="login-form" class="card hidden">
+        <h2 id="login-form-title">Đăng nhập</h2>
+        <input id="username" placeholder="Tên người dùng" required />
+        <input id="password" type="password" placeholder="Mật khẩu" required />
+        <button id="login-form-btn" type="submit">Đăng nhập</button>
+        <p id="register-link">
+          Chưa có tài khoản?
+          <a href="#" onclick="switchRegsisterMode()">Đăng ký</a>
+        </p>
+      </form>
+
+      <section id="chat" class="card hidden">
+        <h2>👤 Chat nội bộ (đã đăng nhập)</h2>
+        <ul id="user-list"></ul>
+        <div id="messages" class="messages"></div>
+        <div class="input-group">
+          <input id="input" placeholder="Nhập tin nhắn..." />
+          <button id="send">Gửi</button>
+        </div>
+      </section>
+
+      <section id="anon-chat" class="card hidden">
+        <h2>👥 Chat công khai (ẩn danh)</h2>
+        <div id="anon-messages" class="messages"></div>
+        <div class="input-group">
+          <input id="anon-input" placeholder="Nhập tin nhắn..." />
+          <button id="anon-send">Gửi</button>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
