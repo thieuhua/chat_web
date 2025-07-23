@@ -2,20 +2,26 @@ const token = localStorage.getItem('token');
 const socket = io({ auth: token ? { token } : {}, autoConnect: false });
 const anonSocket = io(); // socket cho ẩn danh
 
+const authControl = document.getElementById('auth-control');
+const userList = document.getElementById('users');
+
+const authForm = document.getElementById('auth-forms');
 const loginForm = document.getElementById('login-form');
-const chatBox = document.getElementById('chat');
-const anonBox = document.getElementById('anon-chat');
 
-const userList = document.getElementById('user-list');
+const chatContainer = document.getElementById('chat-container');
+const chatHeader = document.getElementById('chat-header');
+const chatWithSpan = document.getElementById('chatting-with');
 const messages = document.getElementById('messages');
-const input = document.getElementById('input');
-const sendBtn = document.getElementById('send');
-const anonInput = document.getElementById('anon-input');
-const anonSend = document.getElementById('anon-send');
-
+const messagesForm = document.getElementById('message-form');
+const messageInput = document.getElementById('message-input');
 
 let regsisterMode = false;
-let selectedUser = null;
+let anonMode = false;
+let isLoggedin = () => {
+    return token && token.length > 0;
+}
+
+let selectedUser = {id: null, username: 'Ẩn danh'};
 let UserInfo = {
     id: null,
     username: 'Ẩn danh'
@@ -24,7 +30,8 @@ let userListData = [];
 
 
 function showLogin() {
-    // document.getElementById('mode-selection').style.display = 'none';
+    alert('mở cửa sổ');
+    authForm.style.display = 'block';
     loginForm.style.display = 'block';
 }
 
@@ -41,13 +48,6 @@ function switchRegsisterMode() {
 }
 
 
-function enterAnonymous() {
-  document.getElementById('mode-selection').style.display = 'none';
-  loginForm.style.display = 'none';
-  chatBox.style.display = 'none';
-  anonBox.style.display = 'block';
-}
-
 
 function refreshUserList() {
     userList.innerHTML = '';
@@ -61,7 +61,12 @@ function refreshUserList() {
             userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
             li.classList.add('active');
             selectedUser = user;
+            anonMode = false;
+            chatWithSpan.textContent = `${user.username}`;
+
             fetchMessages();
+            chatContainer.style.display = 'block';
+            authForm.style.display = 'none';
         };
         userList.appendChild(li);
     });
@@ -83,7 +88,7 @@ function addMessage(msg, private = false) {
 }
 
 function fetchMessages() {
-    const url = selectedUser?
+    const url = selectedUser.id?
         `/api/messages?to=${selectedUser.id}` :
         '/api/messages';
     fetch(url, {
@@ -96,6 +101,30 @@ function fetchMessages() {
         data.forEach(msg => addMessage(msg, !!msg.receiver_id));
 
     })
+}
+
+
+
+function EnterAnonymous() {
+    selectedUser = null;
+    messages.innerHTML = ''; // xóa tin nhắn cũ
+    chatWithSpan.textContent = 'Chat ẩn danh';
+    anonMode = true;
+
+    authForm.style.display = 'none';
+    chatContainer.style.display = 'block';
+}
+
+function EnterPublicChat() {
+    selectedUser = null;
+    chatWithSpan.textContent = 'Chat công khai';
+    anonMode = false;
+
+    fetchMessages(); // tải tin nhắn công khai
+
+    authForm.style.display = 'none';
+    chatContainer.style.display = 'block';
+
 }
 
 
@@ -114,8 +143,8 @@ loginForm.onsubmit = async (e) => {// xử lý đăng nhập/đăng ký
     const data = await res.json();
     if (res.ok && data.token) { // đăng nhập thành công
         localStorage.setItem('token', data.token);
-        loginForm.style.display = 'none';
-        chatBox.style.display = 'block';
+        authForm.style.display = 'none';
+        chatContainer.style.display = 'block';
         socket.auth.token = data.token;
         socket.connect();
         UserInfo = { id: data.user.id, username: data.user.username };
@@ -124,25 +153,21 @@ loginForm.onsubmit = async (e) => {// xử lý đăng nhập/đăng ký
     }
 };
 
-sendBtn.onclick = () => {
-  if (input.value.trim()) {
-    socket.emit('send message', {
-      to: selectedUser.id,
-      content: input.value.trim()
-    });
-    input.value = '';
-  }
-};
 
-anonSend.onclick = () => {
-  if (anonInput.value.trim()) {
-    anonSocket.emit('send message', {
-      to: null,
-      content: anonInput.value.trim()
-    });
-    anonInput.value = '';
-  }
-};
+messagesForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const content = messageInput.value.trim();
+    if (!content) return;
+    messageInput.value = '';
+
+    if (anonMode) {// gửi tin nhắn ẩn danh
+        anonSocket.emit('send message', { to: null, content });
+    } else if (selectedUser && selectedUser.id) { // gửi tin nhắn riêng tư
+        socket.emit('send message', { to: selectedUser.id, content });
+    } else { // gửi tin nhắn công khai
+        socket.emit('send message', { to: null, content });
+    }
+}
 
 socket.on('connect', () => {
     fetch('/api/users', {
@@ -159,6 +184,7 @@ socket.on('connect', () => {
 });
 
 socket.on('public message', msg => {
+    if (anonMode) return; 
     addMessage(msg, false);
 });
 
@@ -169,9 +195,8 @@ socket.on('private message', msg => {
 });
 
 anonSocket.on('public message', msg => {
-  const div = document.createElement('div');
-  div.textContent = `[Công khai] ${msg.senderName || 'Ẩn danh'}: ${msg.content}`;
-  document.getElementById('anon-messages').appendChild(div);
+    if (!anonMode) return; 
+    addMessage(msg, false);
 });
 
 socket.on('connect_error', (err) => {

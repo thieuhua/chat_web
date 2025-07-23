@@ -1,54 +1,65 @@
-<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Chat</title>
-    <link rel="stylesheet" href="style.css" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng Chat</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="/socket.io/socket.io.js"></script>
     <script defer src="client.js"></script>
-  </head>
-  <body>
-    <main class="container">
-      <header>
-        <h1>💬 Chào mừng đến với Web Chat</h1>
-      </header>
+</head>
+<body>
+  <h2>Ứng dụng Chat</h2>
 
-      <section id="mode-selection" class="card">
-        <button onclick="showLogin()">Đăng nhập</button>
-        <button onclick="enterAnonymous()">Chat ẩn danh</button>
-      </section>
+  <div id="sidebar">
+    <h3>Điều khiển</h3>
+    <div id="auth-control">
+      <button id="login-toggle" onclick = "showLogin()">Đăng nhập</button>
+      <div id ="user-info" style="display:none;">
+        <span id="username-display"></span>
+        <button id="logout-btn">Đăng xuất</button>
+      </div>
+    </div>
+    <div id="chat-modes">
+        <strong>Công cộng:</strong>
+        <ul>
+            <li onclick="EnterPublicChat()" class="login_features">Công khai</li>
+            <li onclick="EnterAnonymous()">Ẩn danh</li>
+        </ul>
 
-      <form id="login-form" class="card hidden">
-        <h2 id="login-form-title">Đăng nhập</h2>
+      <div id="private-chat-section" class = "login_features">
+        <strong>Chat riêng tư với:</strong>
+        <ul id="users"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-forms" style="display:none;">
+    <form id="login-form" class="card hidden">
+        <h3 id="login-form-title">Đăng nhập</h3>
         <input id="username" placeholder="Tên người dùng" required />
         <input id="password" type="password" placeholder="Mật khẩu" required />
         <button id="login-form-btn" type="submit">Đăng nhập</button>
         <p id="register-link">
-          Chưa có tài khoản?
-          <a href="#" onclick="switchRegsisterMode()">Đăng ký</a>
+            Chưa có tài khoản?
+            <a href="#" onclick="switchRegsisterMode()">Đăng ký</a>
         </p>
+    </form>
+  </div>
+
+  <div id="chat-container" style="display:none;">
+    <div class="chat-main">
+      <div id="chat-header">
+        <strong>Đang nhắn với: <span id="chatting-with">Ẩn danh</span></strong>
+      </div>
+      <div id="messages"></div>
+      <form id="message-form">
+        <input id="message-input" placeholder="Nhập tin nhắn" required>
+        <button type="submit">Gửi</button>
       </form>
+    </div>
+  </div>
 
-      <section id="chat" class="card hidden">
-        <h2>👤 Chat nội bộ (đã đăng nhập)</h2>
-        <ul id="user-list"></ul>
-        <div id="messages" class="messages"></div>
-        <div class="input-group">
-          <input id="input" placeholder="Nhập tin nhắn..." />
-          <button id="send">Gửi</button>
-        </div>
-      </section>
-
-      <section id="anon-chat" class="card hidden">
-        <h2>👥 Chat công khai (ẩn danh)</h2>
-        <div id="anon-messages" class="messages"></div>
-        <div class="input-group">
-          <input id="anon-input" placeholder="Nhập tin nhắn..." />
-          <button id="anon-send">Gửi</button>
-        </div>
-      </section>
-    </main>
-  </body>
+  <!-- <script type="module" src="/client.js"></script> -->
+</body>
 </html>
