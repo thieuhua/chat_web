@@ -9,57 +9,59 @@
     <script defer src="client.js"></script>
 </head>
 <body>
-  <h2>Ứng dụng Chat</h2>
+    <div id="container" style="display: flex; min-height: 100vh;">
+        <!-- sildebar -->
+        <aside id="sidebar">
+            <h2>Ứng dụng chat</h2>
+            <div id="user-section">
+                <!-- thông tin sau khi đăng nhập -->
+                 <div id="user-info" style="display: none;">
+                    <span id="username-display"></span>
+                    <button id="logout-btn" type="button">Đăng xuất</button>
+                 </div>
+                <!-- nut dang nhap khi chua dang nhap -->
+                 <button id="login-toggle" type="button">Đăng nhập</button>
+            </div>
+            <div id="chat-modes">
+                <strong>Chế độ chat:</strong>
+                <ul>
+                    <li id="anonymous-chat-btn">Chat an danh</li>
+                    <li id="public-chat-btn" class="require-login" style="display: none;">Chat cong khai</li>
+                </ul>
+                <div id="private-chat-section" class="require-login" style="display: none;">
+                    <strong>Chat riêng tư với:</strong>
+                    <ul id="users"></ul>
+                </div>
+            </div>
+        </aside>
 
-  <div id="sidebar">
-    <h3>Điều khiển</h3>
-    <div id="auth-control">
-      <button id="login-toggle" onclick = "showLogin()">Đăng nhập</button>
-      <div id ="user-info" style="display:none;">
-        <span id="username-display"></span>
-        <button id="logout-btn">Đăng xuất</button>
-      </div>
+        <main id="main-content" style="flex: 1;">
+            <section id="auth-forms" style="display:none;">
+                <form id="login-form" class="card hidden">
+                    <h3 id="login-form-title">Đăng nhập</h3>
+                    <input id="username" placeholder="Tên người dùng" required />
+                    <input id="password" type="password" placeholder="Mật khẩu" required />
+                    <button id="login-form-btn" type="submit">Đăng nhập</button>
+                    <p id="register-link">
+                        Chưa có tài khoản?
+                        <a href="#" id="switch-register">Đăng ký</a>
+                    </p>
+                </form>
+            </section>
+            <section id="chat-container" style="display:none;">
+              <div class="chat-main">
+                <div id="chat-header">
+                  <strong>Đang nhắn với: <span id="chatting-with">Ẩn danh</span></strong>
+                </div>
+                <div id="messages"></div>
+                <form id="message-form">
+                    <input id="message-input" placeholder="Nhập tin nhắn" required>
+                    <button type="submit">Gửi</button>
+                </form>
+              </div>
+            </section>
+        </main>
     </div>
-    <div id="chat-modes">
-        <strong>Công cộng:</strong>
-        <ul>
-            <li onclick="EnterPublicChat()" class="login_features">Công khai</li>
-            <li onclick="EnterAnonymous()">Ẩn danh</li>
-        </ul>
 
-      <div id="private-chat-section" class = "login_features">
-        <strong>Chat riêng tư với:</strong>
-        <ul id="users"></ul>
-      </div>
-    </div>
-  </div>
-
-  <div id="auth-forms" style="display:none;">
-    <form id="login-form" class="card hidden">
-        <h3 id="login-form-title">Đăng nhập</h3>
-        <input id="username" placeholder="Tên người dùng" required />
-        <input id="password" type="password" placeholder="Mật khẩu" required />
-        <button id="login-form-btn" type="submit">Đăng nhập</button>
-        <p id="register-link">
-            Chưa có tài khoản?
-            <a href="#" onclick="switchRegsisterMode()">Đăng ký</a>
-        </p>
-    </form>
-  </div>
-
-  <div id="chat-container" style="display:none;">
-    <div class="chat-main">
-      <div id="chat-header">
-        <strong>Đang nhắn với: <span id="chatting-with">Ẩn danh</span></strong>
-      </div>
-      <div id="messages"></div>
-      <form id="message-form">
-        <input id="message-input" placeholder="Nhập tin nhắn" required>
-        <button type="submit">Gửi</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- <script type="module" src="/client.js"></script> -->
 </body>
 </html>

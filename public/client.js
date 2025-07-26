@@ -1,77 +1,124 @@
-const token = localStorage.getItem('token');
-const socket = io({ auth: token ? { token } : {}, autoConnect: false });
-const anonSocket = io(); // socket cho ẩn danh
+let token = localStorage.getItem('token');
+let anonSocket = io();
+let socket;
 
-const authControl = document.getElementById('auth-control');
-const userList = document.getElementById('users');
-
-const authForm = document.getElementById('auth-forms');
+const authForms = document.getElementById('auth-forms');
 const loginForm = document.getElementById('login-form');
-
+const sidebar = document.getElementById('sidebar');
+const userInfo = document.getElementById('user-info');
+const usernameDisplay = document.getElementById('username-display');
+const logoutBtn = document.getElementById('logout-btn');
+const loginToggle = document.getElementById('login-toggle');
 const chatContainer = document.getElementById('chat-container');
-const chatHeader = document.getElementById('chat-header');
 const chatWithSpan = document.getElementById('chatting-with');
 const messages = document.getElementById('messages');
-const messagesForm = document.getElementById('message-form');
+const messageForm = document.getElementById('message-form');
 const messageInput = document.getElementById('message-input');
+const userList = document.getElementById('users');
+const publicChatBtn = document.getElementById('public-chat-btn');
+const anonymousChatBtn = document.getElementById('anonymous-chat-btn');
+const privateChatSection = document.getElementById('private-chat-section');
+const switchRegister = document.getElementById('switch-register');
+const loginFormTitle = document.getElementById('login-form-title');
+const registerLink = document.getElementById('register-link');
 
-let regsisterMode = false;
-let anonMode = false;
-let isLoggedin = () => {
-    return token && token.length > 0;
-}
+let isRegisterMode = false;
+let selectedUser = null; // null = anonymous/public, otherwise {id, username}
+let userInfoData = null; // {id, username}
 
-let selectedUser = {id: null, username: 'Ẩn danh'};
-let UserInfo = {
-    id: null,
-    username: 'Ẩn danh'
-};
-let userListData = [];
-
-
-function showLogin() {
-    alert('mở cửa sổ');
-    authForm.style.display = 'block';
+function showAuthForms() {
+    authForms.style.display = 'block';
     loginForm.style.display = 'block';
+    chatContainer.style.display = 'none';
+}
+function hideAuthForms() {
+    authForms.style.display = 'none';
 }
 
-function switchRegsisterMode() {
-    regsisterMode = !regsisterMode;
-    document.getElementById('login-form-title').textContent = regsisterMode ? 'Đăng ký' : 'Đăng nhập';
-    document.getElementById('username').placeholder = regsisterMode ? 'Tên đăng ký' : 'Tên người dùng';
-    document.getElementById('password').placeholder = regsisterMode ? 'Mật khẩu mới' : 'Mật khẩu';
-    document.getElementById('login-form-btn').textContent = regsisterMode ? 'Đăng ký' : 'Đăng nhập';
+function showChatContainer() {
+    chatContainer.style.display = 'block';
+    authForms.style.display = 'none';
+}
 
-    document.getElementById('register-link').innerHTML = regsisterMode?
-        'Đã có tài khoản? <a href="#" onclick="switchRegsisterMode()">Đăng nhập</a>' :
-        'Chưa có tài khoản? <a href="#" onclick="switchRegsisterMode()">Đăng ký</a>';
+function showSidebarLoginState(islogedIn = false) {
+    if(islogedIn && userInfoData) {
+        userInfo.style.display = '';
+        usernameDisplay.textContent = userInfoData.username;
+        logoutBtn.style.display = '';
+        loginToggle.style.display = 'none';
+
+        document.querySelectorAll('.require-login').forEach(el => el.style.display = '');
+    }
+    else {
+        userInfo.style.display = 'none';
+        logoutBtn.style.display = 'none';
+        loginToggle.style.display = '';
+        document.querySelectorAll('.require-login').forEach(el => el.style.display = 'none');
+    }
+}
+
+function setToken(newToken) {
+    token = newToken;
+    if(token) localStorage.setItem('token', token);
+    else localStorage.removeItem('token');
+}
+function getToken() {
+    return localStorage.getItem('token');
+}
+
+function connectSocketIfNeeded(authToken) {
+    // Nếu đã có socket kết nối thì ngắt kết nối cũ
+    if(socket) socket.disconnect();
+    if(anonSocket) anonSocket.disconnect();
+    alert("Tạo kết nối mới nè");
+    // Tạo kết nối mới với token nếu có
+    socket = io({ auth: authToken ? { token:authToken } : {}, autoConnect: false });
+    anonSocket = io();
+    // Register event listeners
+    setupSocketEvents();
+    socket.connect();
+}
+
+
+switchRegister.onclick = function(e) {
+    isRegisterMode = !isRegisterMode;
+    loginFormTitle.textContent = isRegisterMode ? 'Đăng ký' : 'Đăng nhập';
+    document.getElementById('login-form-btn').textContent = isRegisterMode ? 'Đăng ký' : 'Đăng nhập';
+    registerLink.innerHTML = isRegisterMode
+        ? 'Đã có tài khoản? <a href="#" id="switch-register">Đăng nhập</a>'
+        : 'Chưa có tài khoản? <a href="#" id="switch-register">Đăng ký</a>';
+    // Re-bind event
+    document.getElementById('switch-register').onclick = switchRegister.onclick;
 }
 
 
 
-function refreshUserList() {
+function refreshUserList(users) {
     userList.innerHTML = '';
-    userListData.forEach(user => {
-        if (user.id == UserInfo.id) return; // không hiển thị chính mình
-        if (user.username == 'Ẩn danh') return; // không hiển thị người ẩn danh
+    users.forEach(user => {
+        if (user.id === userInfoData.id) return; // không hiển thị chính mình
+        // if (user.username == 'Ẩn danh') return; // không hiển thị người ẩn danh
         const li = document.createElement('li');
         li.textContent = user.username;
         li.onclick = () => {
-            // Cập nhật giao diện người dùng
-            userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
-            li.classList.add('active');
             selectedUser = user;
-            anonMode = false;
             chatWithSpan.textContent = `${user.username}`;
 
             fetchMessages();
-            chatContainer.style.display = 'block';
-            authForm.style.display = 'none';
+            showChatContainer();
+            highlightActiveUser(user.id);
         };
         userList.appendChild(li);
     });
 }
 
+function highlightActiveUser(userId) {
+  userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
+  if (userId) {
+    const li = Array.from(userList.children).find(li => li.textContent === selectedUser.username);
+    if (li) li.classList.add('active');
+  }
+}
 
 function addMessage(msg, private = false) {
     const div = document.createElement('div');
@@ -88,53 +135,75 @@ function addMessage(msg, private = false) {
 }
 
 function fetchMessages() {
-    const url = selectedUser.id?
+    const url = selectedUser&&selectedUser.id?
         `/api/messages?to=${selectedUser.id}` :
         '/api/messages';
-    fetch(url, {
-        headers: {
-            'Authorization': `Bearer ${socket.auth.token}`,
-        }
-    }).then(res => res.json())
+    let headers ={};
+    headers['Authorization'] = `Bearer ${token}`;
+    
+    fetch(url, { headers })
+    .then(res => {
+        if(!res.ok) throw new Error("Lỗi tải tin nhắn");
+        return res.json();
+    })
     .then(data => {
         messages.innerHTML = ''; // xóa tin nhắn cũ
         data.forEach(msg => addMessage(msg, !!msg.receiver_id));
-
+    })
+    .catch(err => {
+        console.error(err);
+        messages.innerHTML = '<div style="color:red">Không tải được tin nhắn</div>';
     })
 }
 
 
 
-function EnterAnonymous() {
+function EnterAnonymousChat() {
     selectedUser = null;
     messages.innerHTML = ''; // xóa tin nhắn cũ
-    chatWithSpan.textContent = 'Chat ẩn danh';
-    anonMode = true;
-
-    authForm.style.display = 'none';
-    chatContainer.style.display = 'block';
+    chatWithSpan.textContent = 'Ẩn danh';
+    showChatContainer();
 }
 
 function EnterPublicChat() {
+    alert("Bạn đang vào phòng chat công khai");
     selectedUser = null;
-    chatWithSpan.textContent = 'Chat công khai';
-    anonMode = false;
+    chatWithSpan.textContent = 'Công khai';
 
     fetchMessages(); // tải tin nhắn công khai
-
-    authForm.style.display = 'none';
-    chatContainer.style.display = 'block';
-
+    showChatContainer();
 }
+
+
+loginToggle.onclick = showAuthForms;
+logoutBtn.onclick = function() {
+    setToken(null);
+    showSidebarLoginState(false);
+    window.location.reload();
+};
+
+anonymousChatBtn.onclick = function() {
+  selectedUser = null;
+  userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
+  EnterAnonymousChat();
+};
+
+publicChatBtn.onclick = function() {
+  selectedUser = null;
+  userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
+  EnterPublicChat();
+};
 
 
 
 loginForm.onsubmit = async (e) => {// xử lý đăng nhập/đăng ký
     e.preventDefault();
+    alert(isRegisterMode ? 'Đang đăng ký...' : 'Đang đăng nhập...');
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
+    const endpoint = isRegisterMode? '/api/register':'/api/login';
 
-    const res = await fetch(regsisterMode? '/api/register':'/api/login', {
+    const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -142,25 +211,36 @@ loginForm.onsubmit = async (e) => {// xử lý đăng nhập/đăng ký
 
     const data = await res.json();
     if (res.ok && data.token) { // đăng nhập thành công
-        localStorage.setItem('token', data.token);
-        authForm.style.display = 'none';
-        chatContainer.style.display = 'block';
-        socket.auth.token = data.token;
-        socket.connect();
-        UserInfo = { id: data.user.id, username: data.user.username };
+        setToken(data.token);
+        alert(data.message || (isRegisterMode ? 'Đăng ký thành công' : 'Đăng nhập thành công'));
+
+        // Lấy thông tin user từ /api/profile
+        const profileRes = await fetch('/api/profile', {
+            headers: { 'Authorization': `Bearer ${data.token}` }
+        });
+        if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            userInfoData = { id: profileData.id, username: profileData.username };
+        }
+
+        connectSocketIfNeeded(data.token);
+        hideAuthForms();
+        showSidebarLoginState(true);
+        EnterPublicChat();
     } else {
-        alert('Sai tài khoản hoặc mật khẩu');
+        alert(data.error || 'Sai tài khoản hoặc mật khẩu');
     }
 };
 
 
-messagesForm.onsubmit = async (e) => {
+messageForm.onsubmit = function(e) {
     e.preventDefault();
     const content = messageInput.value.trim();
     if (!content) return;
     messageInput.value = '';
+    messageInput.focus();
 
-    if (anonMode) {// gửi tin nhắn ẩn danh
+    if (!userInfoData) {// gửi tin nhắn ẩn danh
         anonSocket.emit('send message', { to: null, content });
     } else if (selectedUser && selectedUser.id) { // gửi tin nhắn riêng tư
         socket.emit('send message', { to: selectedUser.id, content });
@@ -168,39 +248,73 @@ messagesForm.onsubmit = async (e) => {
         socket.emit('send message', { to: null, content });
     }
 }
+function setupSocketEvents() {
 
-socket.on('connect', () => {
-    fetch('/api/users', {
-            headers: {
-                'Authorization': `Bearer ${socket.auth.token}`,
-            }
-        })
-    .then(res => res.json()) 
-    .then(users => { /// user
-        userListData = users;
-        refreshUserList();
-        fetchMessages(); // tải tin nhắn khi kết nối
+    socket.on('connect', () => {
+        fetch('/api/users', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            })
+        .then(res => res.json()) 
+        .then(users => { /// user
+            refreshUserList(users);
+            fetchMessages(); // tải tin nhắn khi kết nối
+        });
     });
-});
 
-socket.on('public message', msg => {
-    if (anonMode) return; 
-    addMessage(msg, false);
-});
+    socket.on('public message', msg => {
+        if (!selectedUser)
+            addMessage(msg, false);
+    });
 
-socket.on('private message', msg => {
-    if (selectedUser && (msg.to === selectedUser.id || msg.from === selectedUser.id)) {
-        addMessage(msg, true);
+    socket.on('private message', msg => {
+        if (selectedUser && (msg.to === selectedUser.id || msg.from === selectedUser.id)) {
+            addMessage(msg, true);
+        }
+    });
+
+    anonSocket.on('public message', msg => {
+        if(selectedUser !== null) return;
+        addMessage(msg, false);
+    });
+
+    socket.on('connect_error', (err) => {
+        console.warn('Lỗi kết nối:', err.message);
+        setToken(null);
+        location.reload();
+    });
+
+}
+
+async function initialize() {
+    const storedToken = getToken();
+    setToken(storedToken);
+
+
+    if (storedToken) {
+        try{
+            const res = await fetch('/api/profile', {
+                headers: {
+                    'Authorization': `Bearer ${storedToken}`,
+                }
+            });
+            if (!res.ok) throw new Error("Token không hợp lệ");
+
+            const data = await res.json();
+            userInfoData = { id: data.id, username: data.username }; // gán userInfoData
+
+            connectSocketIfNeeded(storedToken);
+            showSidebarLoginState(true);
+            EnterPublicChat();
+        } catch (err) {
+            console.warn('Token hết hạn hoặc lỗi xác thực:', err);
+            setToken(null);
+            EnterAnonymousChat();
+        }
+    } else {
+        EnterAnonymousChat();
     }
-});
+}
 
-anonSocket.on('public message', msg => {
-    if (!anonMode) return; 
-    addMessage(msg, false);
-});
-
-socket.on('connect_error', (err) => {
-  console.warn('Lỗi kết nối:', err.message);
-  localStorage.removeItem('token');
-  location.reload();
-});
+initialize();

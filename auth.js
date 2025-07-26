@@ -49,6 +49,10 @@ router.post('/login', async (req, res) => {
     res.json({ token });
 });
 
+router.get('/profile', requireAuth, (req, res) => {
+    res.json({ id: req.user.id, username: req.user.username})
+});
+
 router.get('/users',requireAuth, (req, res) => {
     const users = db.prepare('SELECT id, username FROM users').all();
     res.json(users);
