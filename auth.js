@@ -2,18 +2,20 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
 import db from './db.js';
 
+dotenv.config();
 
 const router = express.Router();
-const SECRET = 'secret-key-chat';
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key';
 
 // Middleware để xác thực token
 function requireAuth(req, res, next) {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
     try {
-        req.user = jwt.verify(token, SECRET);
+        req.user = jwt.verify(token, JWT_SECRET);
         next();
     } catch {
         res.status(401).json({ error: 'Invalid token' });
@@ -29,7 +31,7 @@ router.post('/register', async (req, res) => {
         db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hashed);
 
         const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-        const token = jwt.sign({ id: user.id, username: user.username }, SECRET);
+        const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
         res.json({ token });
         
     } catch (err) {
@@ -45,7 +47,7 @@ router.post('/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, username: user.username }, SECRET);
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET);
     res.json({ token });
 });
 
@@ -88,7 +90,7 @@ function authMiddleware(socket, next) {
     if (!token) return next(); // cho phép ẩn danh
 
     try {
-        const payload = jwt.verify(token, SECRET);
+        const payload = jwt.verify(token, JWT_SECRET);
         socket.user = payload;
         next();
     } catch (err) {
