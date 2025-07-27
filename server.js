@@ -14,6 +14,11 @@ const io = new Server(server, { cors: { origin: '*' } });
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} from ${req.ip}`);
+  next();
+});
+
 app.use('/api', authRouter);
 
 const userSockets = new Map();

@@ -264,7 +264,7 @@ function setupSocketEvents() {
     });
 
     socket.on('public message', msg => {
-        if (!selectedUser)
+        if ((!selectedUser) && msg.from != null)
             addMessage(msg, false);
     });
 
@@ -275,7 +275,7 @@ function setupSocketEvents() {
     });
 
     anonSocket.on('public message', msg => {
-        if(selectedUser !== null) return;
+        if(selectedUser || msg.from) return;
         addMessage(msg, false);
     });
 
