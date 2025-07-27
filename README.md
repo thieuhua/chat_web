@@ -11,7 +11,7 @@ Một ứng dụng trò chuyện đơn giản trên nền web.
 ## Cài đặt
 
 ```bash
-git clone https://github.com/yourusername/chat_web.git
+git clone https://github.com/thieuhua/chat_web.git
 cd chat_web
 npm install
 ```
