@@ -99,7 +99,12 @@ function refreshUserList(users) {
         if (user.id === userInfoData.id) return; // không hiển thị chính mình
         // if (user.username == 'Ẩn danh') return; // không hiển thị người ẩn danh
         const li = document.createElement('li');
+        li.setAttribute('data-user-id', user.id); // thêm thuộc tính để dễ dàng tìm kiếm
         li.textContent = user.username;
+
+        const dot = document.createElement('span');
+        dot.classList.add('unread-dot');
+        dot.style.display = 'none'; // tạm ẩn
         li.onclick = () => {
             selectedUser = user;
             chatWithSpan.textContent = `${user.username}`;
@@ -107,16 +112,37 @@ function refreshUserList(users) {
             fetchMessages();
             showChatContainer();
             highlightActiveUser(user.id);
+            hideNotificationDot(user.id);
         };
         userList.appendChild(li);
     });
 }
 
+function showNotificationDot(userId) {
+    const li = userList.querySelector(`li[data-user-id="${userId}"]`);
+    if (li) {
+        const dot = li.querySelector('.unread-dot');
+        if (dot) dot.style.display = 'inline-block';
+    }
+}
+
+function hideNotificationDot(userId) {
+    const li = userList.querySelector(`li[data-user-id="${userId}"]`);
+    if (li) {
+        const dot = li.querySelector('.unread-dot');
+        if (dot) dot.style.display = 'none';
+    }
+}
+
+
+// Cập nhật danh sách người dùng và đánh dấu người đang chat
 function highlightActiveUser(userId) {
   userList.querySelectorAll('li').forEach(el => el.classList.remove('active'));
   if (userId) {
-    const li = Array.from(userList.children).find(li => li.textContent === selectedUser.username);
-    if (li) li.classList.add('active');
+    const activeUser = userList.querySelector(`li[data-user-id="${userId}"]`);
+    if (activeUser) {
+        activeUser.classList.add('active');
+    }
   }
 }
 
@@ -271,6 +297,9 @@ function setupSocketEvents() {
     socket.on('private message', msg => {
         if (selectedUser && (msg.to === selectedUser.id || msg.from === selectedUser.id)) {
             addMessage(msg, true);
+        }
+        if(selectedUser && msg.from !== selectedUser.id) {
+            showNotificationDot(msg.from);
         }
     });
 
