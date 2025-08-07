@@ -30,6 +30,7 @@ io.on('connection', (socket) => {
   console.log(`User connected: ${user.username}`);
 
   socket.on('send message', ({ to, content }) => {
+    console.log(`Message from ${user.username} to ${to || 'public'}: ${content}`);
     db.prepare('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)')
       .run(user.id, to || null, content);
 

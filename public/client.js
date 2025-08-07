@@ -75,7 +75,7 @@ function connectSocketIfNeeded(authToken) {
     socket = io({ auth: authToken ? { token:authToken } : {}, autoConnect: false });
     anonSocket = io();
     // Register event listeners
-    setupSocketEvents();
+    setupSocketEvents(socket);
     socket.connect();
 }
 
@@ -192,7 +192,7 @@ function EnterAnonymousChat() {
 }
 
 function EnterPublicChat() {
-    alert("Bạn đang vào phòng chat công khai");
+    // alert("Bạn đang vào phòng chat công khai");
     selectedUser = null;
     chatWithSpan.textContent = 'Công khai';
 
@@ -274,7 +274,7 @@ messageForm.onsubmit = function(e) {
         socket.emit('send message', { to: null, content });
     }
 }
-function setupSocketEvents() {
+function setupSocketEvents(socket) {
 
     socket.on('connect', () => {
         fetch('/api/users', {
