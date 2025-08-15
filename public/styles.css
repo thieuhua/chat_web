@@ -109,6 +109,17 @@ body {
   color: #2262a3;
 }
 
+.unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    margin-left: 5px;
+    vertical-align: middle;
+
+}
+
 /* Main Content */
 #main-content {
   flex: 1;
@@ -229,6 +240,12 @@ body {
   flex-direction: column;
   gap: 6px;
   min-height: 0;
+
+  scrollbar-width: none;
+}
+
+#messages::-webkit-scrollbar {
+    display: none;
 }
 
 .public-msg {
