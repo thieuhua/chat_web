@@ -1,3 +1,4 @@
+// === client.js ===
 let token = localStorage.getItem('token');
 let anonSocket = io();
 let socket;
@@ -25,6 +26,8 @@ const registerLink = document.getElementById('register-link');
 let isRegisterMode = false;
 let selectedUser = null; // null = anonymous/public, otherwise {id, username}
 let userInfoData = null; // {id, username}
+
+let oldestTimestamp = null; // Để lưu timestamp của tin nhắn cũ nhất
 
 function showAuthForms() {
     authForms.style.display = 'block';
@@ -105,14 +108,17 @@ function refreshUserList(users) {
         const dot = document.createElement('span');
         dot.classList.add('unread-dot');
         dot.style.display = 'none'; // tạm ẩn
+        li.appendChild(dot);
+
         li.onclick = () => {
             selectedUser = user;
             chatWithSpan.textContent = `${user.username}`;
 
-            fetchMessages();
             showChatContainer();
             highlightActiveUser(user.id);
             hideNotificationDot(user.id);
+            fetchMessages();
+
         };
         userList.appendChild(li);
     });
@@ -146,24 +152,30 @@ function highlightActiveUser(userId) {
   }
 }
 
-function addMessage(msg, private = false) {
+function addMessage(msg, private = false, prepend = false) {
     const div = document.createElement('div');
     div.textContent = `${private ? '[Riêng tư]' : '[Công khai]'} ${msg.senderName || 'Ẩn danh'}: ${msg.content}`;
-    if (private) {
-        div.style.color = 'blue';
-    } else {
-        div.style.color = 'green';
-    }
+    div.style.color = private ? 'blue' : 'green';
 
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight; // cuộn xuống cuối
+    if(prepend) {
+        messages.insertBefore(div, messages.firstChild)
+    }
+    else {
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight; // cuộn xuống cuối
+    }
 
 }
 
-function fetchMessages() {
-    const url = selectedUser&&selectedUser.id?
-        `/api/messages?to=${selectedUser.id}` :
-        '/api/messages';
+async function fetchMessages(loadMore = false) {
+    const url = new URL('/api/messages', window.location.origin);
+    if (selectedUser && selectedUser.id) {
+        url.searchParams.set('to', selectedUser.id);
+    }
+    url.searchParams.set('limit', 50);
+    if (loadMore && oldestTimestamp) {
+        url.searchParams.set('before', oldestTimestamp);
+    }
     let headers ={};
     headers['Authorization'] = `Bearer ${token}`;
     
@@ -173,15 +185,29 @@ function fetchMessages() {
         return res.json();
     })
     .then(data => {
-        messages.innerHTML = ''; // xóa tin nhắn cũ
-        data.forEach(msg => addMessage(msg, !!msg.receiver_id));
-    })
+        if(!loadMore)
+            messages.innerHTML = ''; // xóa tin nhắn cũs
+        data.forEach(msg => addMessage(msg, !!msg.receiver_id, true));
+        if(data.length>0 && oldestTimestamp > data[data.length - 1].timestamp)
+            oldestTimestamp = data[data.length - 1].timestamp;
+        
+        if(!loadMore)
+            messages.scrollTop = messages.scrollHeight
+
+    })  
     .catch(err => {
         console.error(err);
         messages.innerHTML = '<div style="color:red">Không tải được tin nhắn</div>';
     })
 }
 
+messages.addEventListener('scroll', async () => {
+    if (messages.scrollTop === 0) {
+        const prevHeight = messages.scrollHeight;
+        await fetchMessages(true);
+        messages.scrollTop = messages.scrollHeight - prevHeight;
+    }
+});
 
 
 function EnterAnonymousChat() {
@@ -298,7 +324,7 @@ function setupSocketEvents(socket) {
         if (selectedUser && (msg.to === selectedUser.id || msg.from === selectedUser.id)) {
             addMessage(msg, true);
         }
-        if(selectedUser && msg.from !== selectedUser.id) {
+        else {
             showNotificationDot(msg.from);
         }
     });

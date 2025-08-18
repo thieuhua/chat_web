@@ -40,6 +40,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
+    console.log(req);
     const { username, password } = req.body;
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -63,25 +64,34 @@ router.get('/users',requireAuth, (req, res) => {
 router.get('/messages',requireAuth, (req, res) => {
     console.log(req.user.id + ' fetching messages for user ' + req.query.to);
     const to = parseInt(req.query.to);
+    const limit = parseInt(req.query.limit) || 50;       // mặc định 50
+    const beforeTimestamp = req.query.beforeTimestamp;
+
     let rows;
     if(to) {
         rows = db.prepare(`
             SELECT m.*, u.username AS senderName
-            FROM messages m JOIN users u ON m.sender_id = u.id
-            WHERE (sender_id = ? AND receiver_id = ?)
-                OR (sender_id = ? AND receiver_id = ?)
-            ORDER BY timestamp ASC 
-        `).all(req.user.id, to, to, req.user.id);
+            FROM messages m
+                JOIN users u ON m.sender_id = u.id
+            WHERE ((sender_id = @me AND receiver_id = @to)
+                OR (sender_id = @to AND receiver_id = @me))
+              AND (@beforeTimestamp IS NULL OR m.timestamp < @beforeTimestamp)
+            ORDER BY timestamp DESC
+            LIMIT @limit
+        `).all({ me: req.user.id, to, beforeTimestamp, limit });
     }
     else {
         rows = db.prepare(`
             SELECT m.*, u.username AS senderName
-            FROM messages m JOIN users u ON m.sender_id = u.id
+            FROM messages m
+                JOIN users u ON m.sender_id = u.id
             WHERE receiver_id IS NULL
-            ORDER BY timestamp ASC 
-        `).all();
+              AND (@beforeTimestamp IS NULL OR m.timestamp < @beforeTimestamp)
+            ORDER BY timestamp DESC
+            LIMIT @limit
+        `).all({ beforeTimestamp, limit});
     }
-    res.json(rows);
+    res.json(rows); // return newest
 })
 
 // Middleware để xác thực người dùng qua socket
