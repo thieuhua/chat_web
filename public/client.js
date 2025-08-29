@@ -73,7 +73,7 @@ function connectSocketIfNeeded(authToken) {
     // Nếu đã có socket kết nối thì ngắt kết nối cũ
     if(socket) socket.disconnect();
     if(anonSocket) anonSocket.disconnect();
-    alert("Tạo kết nối mới nè");
+    // alert("Tạo kết nối mới nè");
     // Tạo kết nối mới với token nếu có
     socket = io({ auth: authToken ? { token:authToken } : {}, autoConnect: false });
     anonSocket = io();
@@ -117,6 +117,8 @@ function refreshUserList(users) {
             showChatContainer();
             highlightActiveUser(user.id);
             hideNotificationDot(user.id);
+            messageInput.focus();
+
             fetchMessages();
 
         };
@@ -172,13 +174,14 @@ async function fetchMessages(loadMore = false) {
     if (selectedUser && selectedUser.id) {
         url.searchParams.set('to', selectedUser.id);
     }
-    url.searchParams.set('limit', 50);
+    url.searchParams.set('limit', 20);
     if (loadMore && oldestTimestamp) {
         url.searchParams.set('before', oldestTimestamp);
     }
     let headers ={};
     headers['Authorization'] = `Bearer ${token}`;
     
+    console.log('Fetching messages from', url.toString());
     fetch(url, { headers })
     .then(res => {
         if(!res.ok) throw new Error("Lỗi tải tin nhắn");
@@ -188,8 +191,10 @@ async function fetchMessages(loadMore = false) {
         if(!loadMore)
             messages.innerHTML = ''; // xóa tin nhắn cũs
         data.forEach(msg => addMessage(msg, !!msg.receiver_id, true));
-        if(data.length>0 && oldestTimestamp > data[data.length - 1].timestamp)
+        if(data.length>0 ) {
+            if (!oldestTimestamp || oldestTimestamp > data[data.length - 1].timestamp)
             oldestTimestamp = data[data.length - 1].timestamp;
+        }
         
         if(!loadMore)
             messages.scrollTop = messages.scrollHeight

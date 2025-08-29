@@ -40,7 +40,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    console.log(req);
+    // console.log(req);
     const { username, password } = req.body;
     const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -65,7 +65,8 @@ router.get('/messages',requireAuth, (req, res) => {
     console.log(req.user.id + ' fetching messages for user ' + req.query.to);
     const to = parseInt(req.query.to);
     const limit = parseInt(req.query.limit) || 50;       // mặc định 50
-    const beforeTimestamp = req.query.beforeTimestamp;
+    const beforeTimestamp = req.query.before;
+    console.log(`Params: to=${to}, limit=${limit}, before=${beforeTimestamp}`);
 
     let rows;
     if(to) {
@@ -75,7 +76,7 @@ router.get('/messages',requireAuth, (req, res) => {
                 JOIN users u ON m.sender_id = u.id
             WHERE ((sender_id = @me AND receiver_id = @to)
                 OR (sender_id = @to AND receiver_id = @me))
-              AND (@beforeTimestamp IS NULL OR m.timestamp < @beforeTimestamp)
+              AND (@beforeTimestamp IS NULL OR DATETIME(m.timestamp) < DATETIME(@beforeTimestamp))
             ORDER BY timestamp DESC
             LIMIT @limit
         `).all({ me: req.user.id, to, beforeTimestamp, limit });
@@ -86,11 +87,12 @@ router.get('/messages',requireAuth, (req, res) => {
             FROM messages m
                 JOIN users u ON m.sender_id = u.id
             WHERE receiver_id IS NULL
-              AND (@beforeTimestamp IS NULL OR m.timestamp < @beforeTimestamp)
+              AND (@beforeTimestamp IS NULL OR DATETIME(m.timestamp) < DATETIME(@beforeTimestamp))
             ORDER BY timestamp DESC
             LIMIT @limit
         `).all({ beforeTimestamp, limit});
     }
+    console.log(`Fetched ${rows.length} messages`);
     res.json(rows); // return newest
 })
 
