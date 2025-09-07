@@ -11,6 +11,27 @@ body {
   min-height: 100vh;
 }
 
+/* Nút toggle sidebar */
+.sidebar-toggle-btn {
+    display: none; /* Ẩn trên desktop */
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: #2f80ed;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 1.2em;
+    cursor: pointer;
+    z-index: 3;
+    transition: background 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+    background: #1b4e92;
+}
+
 /* Sidebar styles */
 #sidebar {
   background: #fff;
@@ -21,7 +42,17 @@ body {
   flex-direction: column;
   gap: 24px;
   z-index: 2;
+  transition: transform 0.3s ease;
 }
+#sidebar.sidebar-hidden {
+    transform: translateX(-100%);
+}
+
+#sidebar.sidebar-visible {
+    transform: translateX(0);
+}
+
+
 
 #sidebar h2 {
   font-size: 1.5em;
@@ -119,6 +150,44 @@ body {
     margin-left: 5px;
     vertical-align: middle;
 
+}
+
+/* Responsive: Hiển thị nút toggle và ẩn sidebar trên mobile */
+@media (max-width: 850px) {
+
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 260px;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(-100%);
+        z-index: 2;
+    }
+    #sidebar.sidebar-visible {
+        transform: translateX(0);
+    }
+    #main-content {
+        margin-left: 0; /* Không để margin khi sidebar ẩn */
+        width: 100%;
+    }
+
+    /* #user-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    #logout-btn, #login-toggle {
+        margin-left: 0;
+    }
+        #chat-modes ul, #users {
+        width: 100%;
+    }
+    #chat-modes ul li, #users li {
+        width: 100%;
+        box-sizing: border-box;
+    } */
 }
 
 /* Main Content */
@@ -314,21 +383,31 @@ body {
 
 /* Responsive */
 @media (max-width: 850px) {
+  .sidebar-toggle-btn {
+    display: block;
+  }
   #container {
     flex-direction: column;
   }
   #sidebar {
-    min-width: 100%;
-    padding: 16px 8vw 16px 8vw;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 16px;
-    box-shadow: none;
-    border-bottom: 1.5px solid #e0eaf5;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    z-index: 2;
+  }
+  #sidebar.sidebar-visible {
+    transform: translateX(0);
   }
   #main-content {
     padding: 0;
     align-items: stretch;
+    margin-left: 0; /* Không để margin khi sidebar ẩn */
+    width: 100%;
   }
   #chat-container {
     margin: 16px 0 0 0;

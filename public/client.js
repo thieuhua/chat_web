@@ -22,12 +22,38 @@ const privateChatSection = document.getElementById('private-chat-section');
 const switchRegister = document.getElementById('switch-register');
 const loginFormTitle = document.getElementById('login-form-title');
 const registerLink = document.getElementById('register-link');
+const sidebarToggle = document.getElementById('sidebar-toggle');
 
 let isRegisterMode = false;
 let selectedUser = null; // null = anonymous/public, otherwise {id, username}
 let userInfoData = null; // {id, username}
 
 let oldestTimestamp = null; // Để lưu timestamp của tin nhắn cũ nhất
+
+sidebarToggle.onclick = function () {
+    sidebar.classList.toggle('sidebar-hidden');
+    sidebar.classList.toggle('sidebar-visible');
+};
+
+document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 850) { // Chỉ áp dụng trên mobile
+        if (sidebar.classList.contains('sidebar-visible') &&
+            !sidebar.contains(e.target) &&
+            !toggleBtn.contains(e.target)) {
+            sidebar.classList.remove('sidebar-visible');
+        }
+    }
+});
+
+sidebar.addEventListener('click', (e) => {
+    if (window.innerWidth <= 850) {
+        // Chỉ đóng nếu nhấn vào "nội dung có sự kiện"
+        const clickableItem = e.target.closest('#sidebar button, #sidebar li');
+        if (clickableItem) {
+            sidebar.classList.remove('sidebar-visible');
+        }
+    }
+});
 
 function showAuthForms() {
     authForms.style.display = 'block';
