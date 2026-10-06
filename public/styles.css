@@ -121,6 +121,36 @@ body {
   margin-top: 10px;
 }
 
+#search-user {
+    padding: 8px 12px;
+    border: 1px solid #cfd8dc;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 1em;
+    outline: none;
+}
+
+#search-user:focus {
+    border: 1.3px solid #2f80ed;
+    box-shadow: 0 0 3px #aee7fd;
+}
+
+#create-group-btn {
+    background: #2f80ed;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    margin: 8px 0;
+    cursor: pointer;
+    font-size: 0.97em;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+#create-group-btn:hover {
+    background: #1b4e92;
+}
+
 #users {
   list-style: none;
   margin: 0;

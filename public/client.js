@@ -1,5 +1,10 @@
 // === client.js ===
 let token = localStorage.getItem('token');
+// Lưu danh sách người dùng đã tương tác hoặc tìm kiếm
+let interactedUsers = JSON.parse(localStorage.getItem('interactedUsers')) || [];
+// Lưu timestamp tương tác gần nhất của từng người dùng
+let interactionTimestamps = JSON.parse(localStorage.getItem('interactionTimestamps')) || {};
+// Socket
 let anonSocket = io();
 let socket;
 
